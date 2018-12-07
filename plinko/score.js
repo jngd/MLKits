@@ -1,6 +1,5 @@
 const outputs = [];
 const predictionPoint = 300;
-const k = 3;
 
 function onScoreUpdate(dropPosition, bounciness, size, bucketLabel) {
   outputs.push([dropPosition, bounciness, size, bucketLabel]);
@@ -11,19 +10,21 @@ function onScoreUpdate(dropPosition, bounciness, size, bucketLabel) {
 }
 
 function runAnalysis() {
-  const testSetSize = 10;
+  const testSetSize = 100;
   const [testSet, trainingSet] = splitDataset(outputs, 10);
 
-  const accuracy = _.chain(testSet)
-    .filter((testPoint) => knn(trainingSet, testPoint[0]) === testPoint[3])
-    .size()
-    .divide(testSetSize)
-    .value();
+  _.range(1, 20).forEach((k) => {
+    const accuracy = _.chain(testSet)
+      .filter((testPoint) => knn(trainingSet, testPoint[0], k) === testPoint[3])
+      .size()
+      .divide(testSetSize)
+      .value();
 
-  console.log('Accuracy is', accuracy);
+    console.log('For k value', k, 'accuracy is', accuracy);
+  });
 }
 
-function knn(data, point) {
+function knn(data, point, k) {
   return _.chain(data)
     .map((row) => [distance(row[0], point), row[3]])
     .sortBy(0, k)
@@ -38,7 +39,13 @@ function knn(data, point) {
 }
 
 function distance(pointA, pointB) {
-  return Math.abs(pointA - pointB);
+  return (
+    _.chain(pointA)
+      .zip(pointB)
+      .map(([a, b]) => (a - b) ** 2)
+      .sum()
+      .value() ** 0.5
+  );
 }
 
 function splitDataset(data, testCount) {
